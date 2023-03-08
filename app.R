@@ -1,53 +1,42 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
 library(tidyverse)
 ds <- read_delim("UAH-lower-troposphere-long.csv.bz2")
 
-# Define UI for application that draws a histogram
+
 ui <- fluidPage(
+  titlePanel("Global Temperature Data"),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("year","Year:",min = 1978 ,max = 2023,value = 2000),
+      selectInput("reg","Select a Region", choices = ds$region)),
+    mainPanel(
+      tabsetPanel(type = "tabs",
+                  tabPanel("main"),
+                  tabPanel("graph",
+                           plotOutput("plot"),
+                           textOutput("plotText")),
+                  tabPanel("table",
+                           dataTableOutput("ltData")))
+)))
 
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
-    )
-)
-
-# Define server logic required to draw a histogram
 server <- function(input, output) {
-
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
+  
+    output$plot <- renderPlot({
+      years <- input$year
+      ds %>%
+        filter(temp <= 3 | temp >= -3) %>% 
+        filter(year == years) %>% 
+        ggplot() +
+        geom_point(aes(x = month, y = temp, col=region)) +
+        xlim(1,12) +
+        ylim(-3.5,3.5)+
+        labs(title = "temp by month",
+             y = "Tempurture",
+             x = 'month')
+    })
+    output$plotText <- renderText("The average temp this year was")
+    output$ltData <- renderDataTable({
+      ds
     })
 }
-
-# Run the application 
 shinyApp(ui = ui, server = server)
