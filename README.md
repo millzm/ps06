@@ -1,3 +1,3 @@
-# ps06
+PS06
 
-#This is project 6
+
